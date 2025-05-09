@@ -1,48 +1,50 @@
 pipeline {
     agent any
-
+    
+    environment {
+        DOCKER_HUB_CREDS = credentials('docker-hub-credentials')
+        APP_NAME = "cicd-pipeline-assignment"
+        DOCKER_IMAGE = "matinkhaled23/${APP_NAME}:${BUILD_NUMBER}"
+    }
+    
     stages {
-        stage('Build') {
+        stage('Checkout') {
             steps {
-                script {
-                    // Pull the latest code from the repository
-                    checkout scm
-                    
-                    // Install dependencies
-                    sh 'npm install'
-                    
-                    // Build the Docker image
-                    sh 'docker build -t your-dockerhub-username/your-app-name:latest .'
-                }
+                checkout scm
             }
         }
-
-        stage('Test') {
+        
+        stage('Install Dependencies') {
             steps {
-                script {
-                    // Run tests
-                    sh 'npm test'
-                }
+                bat 'npm install'
             }
         }
-
-        stage('Deploy') {
+        
+        stage('Run Tests') {
             steps {
-                script {
-                    // Push the Docker image to Docker Hub
-                    sh 'docker push your-dockerhub-username/your-app-name:latest'
-                    
-                    // Optionally, run deployment script
-                    sh './scripts/deploy.sh'
+                bat 'npm test'
+            }
+        }
+        
+        stage('Build Docker Image') {
+            steps {
+                bat "docker build -t ${DOCKER_IMAGE} ."
+            }
+        }
+        
+        stage('Push to Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                    bat "docker login -u %USERNAME% -p %PASSWORD%"
+                    bat "docker push ${DOCKER_IMAGE}"
                 }
             }
         }
     }
-
+    
     post {
         always {
-            // Clean up Docker images
-            sh 'docker rmi your-dockerhub-username/your-app-name:latest || true'
+            bat 'docker logout'
         }
     }
 }
