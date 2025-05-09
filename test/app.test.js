@@ -5,6 +5,7 @@ test('App should be defined', () => {
     expect(app).toBeDefined();
 });
 
+// Simple test that doesn't use supertest or any external dependencies
 test('Basic test', () => {
     expect(true).toBe(true);
 });
