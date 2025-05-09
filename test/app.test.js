@@ -5,6 +5,10 @@ test('App should be defined', () => {
     expect(app).toBeDefined();
 });
 
+test('Basic test', () => {
+    expect(true).toBe(true);
+});
+
 describe('GET /', () => {
     it('should respond with a 200 status code', async() => {
         const response = await request(app).get('/');

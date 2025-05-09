@@ -26,13 +26,33 @@ pipeline {
             }
         }
         
+        stage('Check Docker') {
+            steps {
+                script {
+                    try {
+                        bat 'docker --version'
+                        env.DOCKER_AVAILABLE = 'true'
+                    } catch (Exception e) {
+                        echo "Docker not available. Will skip Docker-related steps."
+                        env.DOCKER_AVAILABLE = 'false'
+                    }
+                }
+            }
+        }
+        
         stage('Build Docker Image') {
+            when {
+                environment name: 'DOCKER_AVAILABLE', value: 'true'
+            }
             steps {
                 bat "docker build -t ${DOCKER_IMAGE} ."
             }
         }
         
         stage('Push to Docker Hub') {
+            when {
+                environment name: 'DOCKER_AVAILABLE', value: 'true'
+            }
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
                     bat "docker login -u %USERNAME% -p %PASSWORD%"
@@ -44,7 +64,13 @@ pipeline {
     
     post {
         always {
-            bat 'docker logout'
+            script {
+                if (env.DOCKER_AVAILABLE == 'true') {
+                    bat 'docker logout'
+                } else {
+                    echo "Skipping Docker logout as Docker is not available"
+                }
+            }
         }
     }
 }
